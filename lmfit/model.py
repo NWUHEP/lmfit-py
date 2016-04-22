@@ -427,7 +427,7 @@ class Model(object):
             key = self._name
         return {key: self.eval(params=params, **kwargs)}
 
-    def fit(self, data, params=None, weights=None, method='leastsq',
+    def fit(self, data, params=None, weights=None, method='leastsq', objective='chi2',
             iter_cb=None, scale_covar=True, verbose=False, fit_kws=None, **kwargs):
         """Fit the model to the data.
 

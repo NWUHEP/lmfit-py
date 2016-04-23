@@ -356,6 +356,16 @@ class Model(object):
             diff *= weights
         return np.asarray(diff).ravel()  # for compatibility with pandas.Series
 
+    def _chi2(self, params, data, yerr, **kwargs):
+        """chi2 minimization metric: (model-data)^2/err
+        """
+        if yerr is None:
+            yerr = 1
+
+        chi2= np.sum(((self.eval(params, **kwargs) - data)/yerr)**2)
+
+        return chi2
+
     def _handle_missing(self, data):
         "handle missing data"
         if self.missing == 'raise':
@@ -536,7 +546,7 @@ class Model(object):
         if fit_kws is None:
             fit_kws = {}
 
-        output = ModelResult(self, params, method=method, iter_cb=iter_cb,
+        output = ModelResult(self, params, method=method, objective=objective, iter_cb=iter_cb,
                              scale_covar=scale_covar, fcn_kws=kwargs,
                              **fit_kws)
         output.fit(data=data, weights=weights)
@@ -718,7 +728,7 @@ class ModelResult(Minimizer):
         Plot the fit results and residuals using matplotlib.
     """
     def __init__(self, model, params, data=None, weights=None,
-                 method='leastsq', fcn_args=None, fcn_kws=None,
+                 method='leastsq', objective='chi2', fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, **fit_kws):
         self.model = model
         self.data = data
@@ -726,7 +736,8 @@ class ModelResult(Minimizer):
         self.method = method
         self.ci_out = None
         self.init_params = deepcopy(params)
-        Minimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
+        #Minimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
+        Minimizer.__init__(self, model._chi2, params, fcn_args=fcn_args,
                            fcn_kws=fcn_kws, iter_cb=iter_cb,
                            scale_covar=scale_covar, **fit_kws)
 

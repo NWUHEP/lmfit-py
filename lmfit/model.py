@@ -366,6 +366,15 @@ class Model(object):
 
         return chi2
 
+    def _nll(self, params, **kwargs):
+        """nll minimization metric: (model-data)^2/err
+        """
+
+        nll = np.sum(np.log(self.eval(params, **kwargs)))
+
+        return nll
+
+
     def _handle_missing(self, data):
         "handle missing data"
         if self.missing == 'raise':
@@ -437,7 +446,7 @@ class Model(object):
             key = self._name
         return {key: self.eval(params=params, **kwargs)}
 
-    def fit(self, data, params=None, weights=None, method='leastsq', objective='chi2',
+    def fit(self, data=None, params=None, weights=None, method='leastsq', objective='chi2',
             iter_cb=None, scale_covar=True, verbose=False, fit_kws=None, **kwargs):
         """Fit the model to the data.
 
@@ -728,7 +737,7 @@ class ModelResult(Minimizer):
         Plot the fit results and residuals using matplotlib.
     """
     def __init__(self, model, params, data=None, weights=None,
-                 method='leastsq', objective='chi2', fcn_args=None, fcn_kws=None,
+                 method='leastsq', objective='res', fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, **fit_kws):
         self.model = model
         self.data = data
@@ -736,8 +745,17 @@ class ModelResult(Minimizer):
         self.method = method
         self.ci_out = None
         self.init_params = deepcopy(params)
+        if objective == 'res':
+            obj = model._res
+        elif objective == 'chi2':
+            obj = model._chi2
+        elif objective == 'nll':
+            obj = model._nll
+        else:
+            raise NotImplementedError('objective function:', objective, 'not implemented')
+
         #Minimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
-        Minimizer.__init__(self, model._chi2, params, fcn_args=fcn_args,
+        Minimizer.__init__(self, obj, params, fcn_args=fcn_args,
                            fcn_kws=fcn_kws, iter_cb=iter_cb,
                            scale_covar=scale_covar, **fit_kws)
 
